@@ -1,0 +1,33 @@
+@import "tailwindcss";
+
+@theme {
+    --color-neon-blue: #3b82f6;
+    --color-neon-pink: #ec4899;
+    --color-neon-purple: #8b5cf6;
+}
+
+@variant dark (&:where(.dark, .dark *));
+
+@layer utilities {
+    .neon-text-blue {
+        text-shadow: 0 0 5px theme('colors.blue.400'), 0 0 10px theme('colors.blue.600');
+    }
+
+    .neon-border-blue {
+        box-shadow: 0 0 5px theme('colors.blue.400'), 0 0 10px theme('colors.blue.600');
+        border-color: theme('colors.blue.400');
+    }
+
+    .neon-glow {
+        box-shadow: 0 0 15px rgba(59, 130, 246, 0.15);
+    }
+
+    .dark .neon-glow {
+        box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+    }
+
+    .dark .neon-card-hover:hover {
+        box-shadow: 0 0 25px rgba(59, 130, 246, 0.4);
+        border-color: theme('colors.blue.500');
+    }
+}
