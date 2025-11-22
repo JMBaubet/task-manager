@@ -2,19 +2,26 @@ import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { DragDropContext, DropResult } from '@hello-pangea/dnd';
 import { useStore } from '../store/useStore';
-import { ArrowLeft, Plus } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import Column from '../components/Column';
-import { TaskStatus } from '../types';
+import { Task, TaskStatus } from '../types';
+import { getPrioritySliderColor, getPriorityLabel } from '../utils/priorityUtils';
 
 export default function ProjectDetail() {
     const { id } = useParams<{ id: string }>();
-    const { projects, moveTask, addTask, deleteTask } = useStore();
+    const { projects, moveTask, addTask, deleteTask, updateTask } = useStore();
     const project = projects.find(p => p.id === id);
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [newTaskStatus, setNewTaskStatus] = useState<TaskStatus>('todo');
-    const [formData, setFormData] = useState({ title: '', description: '' });
+    const [formData, setFormData] = useState({ title: '', description: '', priority: 3 });
     const [deleteConfirmTaskId, setDeleteConfirmTaskId] = useState<string | null>(null);
+
+    // États pour l'édition
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [editingTask, setEditingTask] = useState<Task | null>(null);
+    const [editFormData, setEditFormData] = useState({ title: '', description: '', priority: 3 });
+
 
     if (!project) {
         return (
@@ -47,15 +54,38 @@ export default function ProjectDetail() {
 
     const handleAddTask = (status: TaskStatus) => {
         setNewTaskStatus(status);
-        setFormData({ title: '', description: '' });
+        setFormData({ title: '', description: '', priority: 3 });
         setIsModalOpen(true);
     };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (id) {
-            addTask(id, formData.title, formData.description, newTaskStatus);
+            addTask(id, formData.title, formData.description, newTaskStatus, formData.priority);
             setIsModalOpen(false);
+        }
+    };
+
+    const handleEditTask = (task: Task) => {
+        setEditingTask(task);
+        setEditFormData({
+            title: task.title,
+            description: task.description,
+            priority: task.priority || 3
+        });
+        setIsEditModalOpen(true);
+    };
+
+    const handleUpdateTask = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (id && editingTask) {
+            updateTask(id, editingTask.id, {
+                title: editFormData.title,
+                description: editFormData.description,
+                priority: editFormData.priority
+            });
+            setIsEditModalOpen(false);
+            setEditingTask(null);
         }
     };
 
@@ -78,25 +108,22 @@ export default function ProjectDetail() {
 
     return (
         <div className="h-full flex flex-col">
-            <div className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 px-6 py-4 flex items-center gap-4 shrink-0 transition-colors">
-                <Link to="/" className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-full text-gray-500 dark:text-gray-400 transition-colors">
-                    <ArrowLeft className="w-5 h-5" />
-                </Link>
-                <div>
-                    <h1 className="text-xl font-bold text-gray-900 dark:text-white neon-text-blue">{project.name}</h1>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{project.description}</p>
-                </div>
+            {/* Project Info Bar */}
+            <div className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 px-4 py-2 shrink-0 transition-colors">
+                <h2 className="text-base font-semibold text-gray-900 dark:text-white">{project.name}</h2>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{project.description}</p>
             </div>
 
-            <div className="flex-1 p-6 overflow-x-auto bg-gray-50 dark:bg-slate-900 transition-colors">
+            <div className="flex-1 p-3 overflow-x-auto bg-gray-50 dark:bg-slate-900 transition-colors">
                 <DragDropContext onDragEnd={onDragEnd}>
-                    <div className="flex gap-6 h-full min-w-fit">
+                    <div className="flex gap-3 h-full min-w-fit">
                         <Column
                             title="À Faire"
                             status="todo"
                             tasks={tasksByStatus.todo}
                             onAddTask={handleAddTask}
                             onDeleteTask={handleDeleteTask}
+                            onEditTask={handleEditTask}
                         />
                         <Column
                             title="En Cours"
@@ -104,6 +131,7 @@ export default function ProjectDetail() {
                             tasks={tasksByStatus['in-progress']}
                             onAddTask={handleAddTask}
                             onDeleteTask={handleDeleteTask}
+                            onEditTask={handleEditTask}
                         />
                         <Column
                             title="Terminé"
@@ -111,6 +139,7 @@ export default function ProjectDetail() {
                             tasks={tasksByStatus.done}
                             onAddTask={handleAddTask}
                             onDeleteTask={handleDeleteTask}
+                            onEditTask={handleEditTask}
                         />
                     </div>
                 </DragDropContext>
@@ -148,6 +177,26 @@ export default function ProjectDetail() {
                                     className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                                     placeholder="Détails de la tâche..."
                                 />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Priorité : <span className="font-semibold" style={{ color: getPrioritySliderColor(formData.priority) }}>{getPriorityLabel(formData.priority)}</span>
+                                </label>
+                                <div className="flex items-center gap-3">
+                                    <span className="text-xs text-gray-500 dark:text-gray-400">1</span>
+                                    <input
+                                        type="range"
+                                        min="1"
+                                        max="5"
+                                        value={formData.priority}
+                                        onChange={(e) => setFormData({ ...formData, priority: parseInt(e.target.value) })}
+                                        className="flex-1 h-2 rounded-lg appearance-none cursor-pointer"
+                                        style={{
+                                            background: `linear-gradient(to right, #22c55e 0%, #84cc16 25%, #eab308 50%, #f97316 75%, #ef4444 100%)`,
+                                        }}
+                                    />
+                                    <span className="text-xs text-gray-500 dark:text-gray-400">5</span>
+                                </div>
                             </div>
                             <div className="flex justify-end gap-3 pt-2">
                                 <button
@@ -198,6 +247,79 @@ export default function ProjectDetail() {
                                 Supprimer
                             </button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Edit Task Modal */}
+            {isEditModalOpen && editingTask && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl dark:shadow-blue-900/20 w-full max-w-md overflow-hidden border dark:border-slate-700">
+                        <div className="px-6 py-4 border-b border-gray-100 dark:border-slate-700 flex justify-between items-center">
+                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Modifier la Tâche</h3>
+                            <button onClick={() => setIsEditModalOpen(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                                <Plus className="w-6 h-6 rotate-45" />
+                            </button>
+                        </div>
+                        <form onSubmit={handleUpdateTask} className="p-6 space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Titre</label>
+                                <input
+                                    type="text"
+                                    required
+                                    value={editFormData.title}
+                                    onChange={(e) => setEditFormData({ ...editFormData, title: e.target.value })}
+                                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                                    placeholder="Titre de la tâche"
+                                    autoFocus
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+                                <textarea
+                                    rows={3}
+                                    value={editFormData.description}
+                                    onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })}
+                                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                                    placeholder="Détails de la tâche..."
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Priorité : <span className="font-semibold" style={{ color: getPrioritySliderColor(editFormData.priority) }}>{getPriorityLabel(editFormData.priority)}</span>
+                                </label>
+                                <div className="flex items-center gap-3">
+                                    <span className="text-xs text-gray-500 dark:text-gray-400">1</span>
+                                    <input
+                                        type="range"
+                                        min="1"
+                                        max="5"
+                                        value={editFormData.priority}
+                                        onChange={(e) => setEditFormData({ ...editFormData, priority: parseInt(e.target.value) })}
+                                        className="flex-1 h-2 rounded-lg appearance-none cursor-pointer"
+                                        style={{
+                                            background: `linear-gradient(to right, #22c55e 0%, #84cc16 25%, #eab308 50%, #f97316 75%, #ef4444 100%)`,
+                                        }}
+                                    />
+                                    <span className="text-xs text-gray-500 dark:text-gray-400">5</span>
+                                </div>
+                            </div>
+                            <div className="flex justify-end gap-3 pt-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsEditModalOpen(false)}
+                                    className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg font-medium transition-colors"
+                                >
+                                    Annuler
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 hover:shadow-lg hover:shadow-green-500/30 font-medium transition-colors"
+                                >
+                                    Enregistrer
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             )}

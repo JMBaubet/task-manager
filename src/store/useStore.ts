@@ -8,7 +8,7 @@ interface AppState {
     addProject: (name: string, description: string) => void;
     updateProject: (id: string, name: string, description: string) => void;
     deleteProject: (id: string) => void;
-    addTask: (projectId: string, title: string, description: string, status: TaskStatus) => void;
+    addTask: (projectId: string, title: string, description: string, status: TaskStatus, priority?: number) => void;
     updateTask: (projectId: string, taskId: string, updates: Partial<Task>) => void;
     deleteTask: (projectId: string, taskId: string) => void;
     moveTask: (projectId: string, taskId: string, newStatus: TaskStatus, newIndex: number) => void;
@@ -45,7 +45,7 @@ export const useStore = create<AppState>()(
                 set((state) => ({
                     projects: state.projects.filter((p) => p.id !== id),
                 })),
-            addTask: (projectId, title, description, status) =>
+            addTask: (projectId, title, description, status, priority = 3) =>
                 set((state) => ({
                     projects: state.projects.map((p) =>
                         p.id === projectId
@@ -58,6 +58,7 @@ export const useStore = create<AppState>()(
                                         title,
                                         description,
                                         status,
+                                        priority,
                                         createdAt: Date.now(),
                                     },
                                 ],

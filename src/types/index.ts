@@ -5,6 +5,7 @@ export interface Task {
     title: string;
     description: string;
     status: TaskStatus;
+    priority?: number; // 1 (basse) à 5 (haute), défaut: 3
     createdAt: number;
 }
 
