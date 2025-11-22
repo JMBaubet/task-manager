@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Project, Task, TaskStatus } from '../types';
 import { v4 as uuidv4 } from 'uuid';
+import { ReactNode } from 'react';
 
 interface AppState {
     projects: Project[];
@@ -14,6 +15,10 @@ interface AppState {
     moveTask: (projectId: string, taskId: string, newStatus: TaskStatus, newIndex: number) => void;
     theme: 'light' | 'dark';
     toggleTheme: () => void;
+    pageTitle: ReactNode | null;
+    setPageTitle: (title: ReactNode | null) => void;
+    actionButton: ReactNode | null;
+    setActionButton: (button: ReactNode | null) => void;
 }
 
 export const useStore = create<AppState>()(
@@ -21,6 +26,10 @@ export const useStore = create<AppState>()(
         (set) => ({
             theme: 'dark', // Default to dark for the neon vibe
             toggleTheme: () => set((state) => ({ theme: state.theme === 'light' ? 'dark' : 'light' })),
+            pageTitle: null,
+            setPageTitle: (title) => set({ pageTitle: title }),
+            actionButton: null,
+            setActionButton: (button) => set({ actionButton: button }),
             projects: [],
             addProject: (name, description) =>
                 set((state) => ({
@@ -136,7 +145,11 @@ export const useStore = create<AppState>()(
                 }),
         }),
         {
-            name: 'task-manager-storage',
+            name: 'task-manager-storage-v2',
+            partialize: (state) => ({
+                theme: state.theme,
+                projects: state.projects,
+            }),
         }
     )
 );

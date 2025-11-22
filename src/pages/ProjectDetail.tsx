@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { DragDropContext, DropResult } from '@hello-pangea/dnd';
 import { useStore } from '../store/useStore';
@@ -6,11 +6,13 @@ import { Plus } from 'lucide-react';
 import Column from '../components/Column';
 import { Task, TaskStatus } from '../types';
 import { getPrioritySliderColor, getPriorityLabel } from '../utils/priorityUtils';
+import { useLayoutContext } from '../components/Layout';
 
 export default function ProjectDetail() {
     const { id } = useParams<{ id: string }>();
     const { projects, moveTask, addTask, deleteTask, updateTask } = useStore();
     const project = projects.find(p => p.id === id);
+    const { setPageTitle, setActionButton } = useLayoutContext();
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [newTaskStatus, setNewTaskStatus] = useState<TaskStatus>('todo');
@@ -21,6 +23,25 @@ export default function ProjectDetail() {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editingTask, setEditingTask] = useState<Task | null>(null);
     const [editFormData, setEditFormData] = useState({ title: '', description: '', priority: 3 });
+
+    // Configure header with project name and description
+    useEffect(() => {
+        if (project) {
+            setPageTitle(
+                <div className="flex flex-col">
+                    <span className="font-semibold text-gray-900 dark:text-white">{project.name}</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">{project.description}</span>
+                </div>
+            );
+            setActionButton(null);
+        }
+
+        // Cleanup on unmount
+        return () => {
+            setPageTitle(null);
+            setActionButton(null);
+        };
+    }, [project, setPageTitle, setActionButton]);
 
 
     if (!project) {
@@ -108,12 +129,6 @@ export default function ProjectDetail() {
 
     return (
         <div className="h-full flex flex-col">
-            {/* Project Info Bar */}
-            <div className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 px-4 py-2 shrink-0 transition-colors">
-                <h2 className="text-base font-semibold text-gray-900 dark:text-white">{project.name}</h2>
-                <p className="text-xs text-gray-500 dark:text-gray-400">{project.description}</p>
-            </div>
-
             <div className="flex-1 p-3 overflow-x-auto bg-gray-50 dark:bg-slate-900 transition-colors">
                 <DragDropContext onDragEnd={onDragEnd}>
                     <div className="flex gap-3 h-full min-w-fit">

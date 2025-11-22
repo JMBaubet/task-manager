@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Folder, Calendar, MoreVertical, Trash2, Edit2 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { Project } from '../types';
+import { useLayoutContext } from '../components/Layout';
 
 export default function Dashboard() {
     const { projects, addProject, deleteProject, updateProject } = useStore();
@@ -11,6 +12,7 @@ export default function Dashboard() {
     const [formData, setFormData] = useState({ name: '', description: '' });
     const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
     const [deleteConfirmProject, setDeleteConfirmProject] = useState<Project | null>(null);
+    const { setPageTitle, setActionButton } = useLayoutContext();
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -40,22 +42,32 @@ export default function Dashboard() {
         setFormData({ name: '', description: '' });
     };
 
+    // Configure header with title and action button
+    useEffect(() => {
+        setPageTitle(
+            <span className="text-gray-500 dark:text-gray-300 font-medium">
+                Gérez vos projets en cours
+            </span>
+        );
+        setActionButton(
+            <button
+                onClick={openCreateModal}
+                className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 hover:shadow-lg hover:shadow-blue-500/40 transition-all shadow-sm"
+            >
+                <Plus className="w-5 h-5" />
+                Nouveau Projet
+            </button>
+        );
+
+        // Cleanup on unmount
+        return () => {
+            setPageTitle(null);
+            setActionButton(null);
+        };
+    }, [setPageTitle, setActionButton]);
+
     return (
         <div className="p-8 max-w-7xl mx-auto">
-            <div className="flex justify-between items-center mb-8">
-                <div>
-                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white neon-text-blue">Projets</h2>
-                    <p className="text-gray-500 dark:text-gray-400 mt-1">Gérez vos projets en cours</p>
-                </div>
-                <button
-                    onClick={openCreateModal}
-                    className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 hover:shadow-lg hover:shadow-blue-500/40 transition-all shadow-sm"
-                >
-                    <Plus className="w-5 h-5" />
-                    Nouveau Projet
-                </button>
-            </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {projects.map((project) => (
                     <div key={project.id} className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm hover:shadow-md dark:hover:shadow-blue-500/20 transition-all group neon-card-hover relative">
