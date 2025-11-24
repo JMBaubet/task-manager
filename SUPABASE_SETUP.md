@@ -1,49 +1,80 @@
-# Guide de Configuration Supabase
+# Configuration Supabase
 
-Suivez ces étapes pour configurer votre backend Supabase.
+Ce guide vous explique comment configurer Supabase pour votre Task Manager.
 
-## 1. Création du Projet
-1.  Allez sur [https://supabase.com/](https://supabase.com/) et cliquez sur **"Start your project"**.
-2.  Connectez-vous avec GitHub ou créez un compte.
-3.  Cliquez sur **"New Project"**.
-4.  Remplissez le formulaire :
-    *   **Name** : `task-manager` (ou ce que vous voulez).
-    *   **Database Password** : Générez un mot de passe fort et **sauvegardez-le** quelque part (vous n'en aurez pas besoin pour l'appli tout de suite, mais c'est important).
-    *   **Region** : Choisissez une région proche de vous (ex: `EU (Paris)` ou `EU (Frankfurt)`).
-    *   **Pricing Plan** : Sélectionnez "Free".
-5.  Cliquez sur **"Create new project"**.
-6.  Attendez quelques minutes que le projet soit prêt (le statut passera de "Setting up" à vert).
+## Étape 1 : Créer un compte Supabase
 
-## 2. Création de la Base de Données (Tables)
-1.  Dans le menu de gauche (la barre latérale), cliquez sur l'icône **SQL Editor** (c'est le 3ème icône en partant du haut, qui ressemble à une console `>_` ou une page de code).
-2.  Cliquez sur **"New query"** (ou utilisez l'onglet vide s'il y en a un).
-3.  Copiez le contenu du fichier `database.sql` de votre projet local.
-    *   *Vous pouvez le trouver dans VS Code : `database.sql` à la racine.*
-4.  Collez le code SQL dans l'éditeur de Supabase.
-5.  Cliquez sur le bouton **"Run"** (en bas à droite de l'éditeur).
-6.  Vous devriez voir un message "Success" dans la zone de résultats.
+1. Allez sur https://supabase.com/
+2. Cliquez sur **"Start your project"**
+3. Connectez-vous avec GitHub (recommandé) ou créez un compte
 
-## 3. Récupération des Clés API
-1.  Dans le menu de gauche, cliquez sur l'icône **Settings** (la roue dentée tout en bas).
-2.  Dans le sous-menu qui s'affiche, cliquez sur **"API"**.
-3.  Cherchez la section **"Project URL"** :
-    *   Copiez l'URL (ex: `https://xyzxyzxyz.supabase.co`).
-4.  Cherchez la section **"Project API keys"** :
-    *   Repérez la clé marquée `anon` `public`.
-    *   Copiez cette clé (c'est une longue chaîne de caractères).
+## Étape 2 : Créer un nouveau projet
 
-## 4. Configuration de l'Application
-1.  Revenez dans votre éditeur de code (VS Code).
-2.  Ouvrez le fichier `.env` à la racine du projet.
-3.  Collez les valeurs que vous venez de copier :
+1. Cliquez sur **"New project"**
+2. Remplissez les informations :
+   - **Name** : Task Manager
+   - **Database Password** : Choisissez un mot de passe fort (notez-le !)
+   - **Region** : Choisissez la région la plus proche de vous
+3. Cliquez sur **"Create new project"**
+4. Attendez 1-2 minutes que le projet soit créé
 
-```env
-VITE_SUPABASE_URL=https://votre-url-projet.supabase.co
-VITE_SUPABASE_ANON_KEY=votre-cle-anon-publique-ici
+## Étape 3 : Créer les tables
+
+1. Dans le menu de gauche, cliquez sur **"SQL Editor"**
+2. Cliquez sur **"+ New query"**
+3. Copiez-collez le contenu du fichier `database.sql` (à la racine du projet)
+4. Cliquez sur **"Run"** (ou `Cmd+Enter`)
+5. Vous devriez voir : "Success. No rows returned"
+
+## Étape 4 : Récupérer les clés API
+
+1. Dans le menu de gauche, cliquez sur **"Project Settings"** (icône engrenage)
+2. Cliquez sur **"API"** dans le sous-menu
+3. Vous verrez deux clés importantes :
+   - **Project URL** : `https://xxxxx.supabase.co`
+   - **anon public** : `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...`
+
+## Étape 5 : Configurer l'application
+
+1. Ouvrez le fichier `.env` à la racine du projet
+2. Remplacez les lignes Google Drive par :
+
+```
+VITE_SUPABASE_URL=https://xxxxx.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 
-4.  Sauvegardez le fichier `.env`.
+3. Sauvegardez le fichier
 
-## 5. Test
-1.  Relancez votre application avec `yarn dev` (si elle tournait déjà, redémarrez-la pour prendre en compte le `.env`).
-2.  L'application est maintenant connectée à Supabase !
+## Étape 6 : Tester
+
+1. Lancez l'application : `yarn dev` ou `yarn tauri dev`
+2. L'application devrait se connecter à Supabase
+3. Créez un projet de test
+4. Vérifiez dans Supabase :
+   - Allez dans **"Table Editor"**
+   - Cliquez sur **"projects"**
+   - Vous devriez voir votre projet !
+
+## Avantages de Supabase
+
+✅ **Gratuit** jusqu'à 500 MB
+✅ **Pas de limite** de requêtes API
+✅ **Interface web** pour voir vos données
+✅ **Base de données SQL** (plus robuste que JSON)
+✅ **Temps réel** (synchronisation automatique entre appareils)
+
+## Dépannage
+
+### "Failed to fetch from Supabase"
+- Vérifiez que l'URL et la clé sont correctes dans `.env`
+- Vérifiez que vous avez bien exécuté le script SQL
+- Redémarrez l'application
+
+### "Row Level Security policy violation"
+- Vérifiez que les policies sont bien créées (dans le script SQL)
+- Allez dans "Authentication" > "Policies" pour vérifier
+
+### Les données ne s'affichent pas
+- Vérifiez dans "Table Editor" que les tables existent
+- Vérifiez que les données sont bien dans la base

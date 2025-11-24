@@ -1,9 +1,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Project, Task, TaskStatus } from '../types';
-import { v4 as uuidv4 } from 'uuid';
 import { ReactNode } from 'react';
-import { jsonbin } from '../services/jsonbin';
+import { supabase } from '../services/supabase';
 
 interface AppState {
     projects: Project[];
@@ -25,33 +24,13 @@ interface AppState {
     setActionButton: (button: ReactNode | null) => void;
 }
 
-// Helper to save state to JSONBin
-const saveState = async (projects: Project[], settings: { theme: 'light' | 'dark'; accentColor: string }) => {
-    try {
-        await jsonbin.update({ projects, settings });
-    } catch (error) {
-        console.error('Failed to save to JSONBin:', error);
-    }
-};
-
 export const useStore = create<AppState>()(
     persist(
         (set) => ({
             theme: 'dark',
-            toggleTheme: () => {
-                set((state) => {
-                    const newTheme = state.theme === 'light' ? 'dark' : 'light';
-                    saveState(state.projects, { theme: newTheme, accentColor: state.accentColor });
-                    return { theme: newTheme };
-                });
-            },
+            toggleTheme: () => set((state) => ({ theme: state.theme === 'light' ? 'dark' : 'light' })),
             accentColor: 'gray',
-            setAccentColor: (color) => {
-                set((state) => {
-                    saveState(state.projects, { theme: state.theme, accentColor: color });
-                    return { accentColor: color };
-                });
-            },
+            setAccentColor: (color) => set({ accentColor: color }),
             pageTitle: null,
             setPageTitle: (title) => set({ pageTitle: title }),
             actionButton: null,
@@ -60,77 +39,146 @@ export const useStore = create<AppState>()(
 
             fetchProjects: async () => {
                 try {
-                    const data = await jsonbin.get();
-                    if (data) {
-                        set((state) => ({
-                            projects: data.projects || [],
-                            theme: data.settings?.theme || state.theme,
-                            accentColor: data.settings?.accentColor || state.accentColor,
-                        }));
-                    }
+                    const { data: projectsData, error: projectsError } = await supabase
+                        .from('projects')
+                        .select('*')
+                        .order('created_at', { ascending: false });
+
+                    if (projectsError) throw projectsError;
+
+                    const projectsWithTasks = await Promise.all(
+                        (projectsData || []).map(async (project) => {
+                            const { data: tasksData, error: tasksError } = await supabase
+                                .from('tasks')
+                                .select('*')
+                                .eq('project_id', project.id)
+                                .order('created_at', { ascending: true });
+
+                            if (tasksError) throw tasksError;
+
+                            return {
+                                id: project.id,
+                                name: project.name,
+                                description: project.description || '',
+                                tasks: (tasksData || []).map((task) => ({
+                                    id: task.id,
+                                    title: task.title,
+                                    description: task.description || '',
+                                    status: task.status as TaskStatus,
+                                    priority: task.priority || 3,
+                                    createdAt: new Date(task.created_at).getTime(),
+                                })),
+                                createdAt: new Date(project.created_at).getTime(),
+                            };
+                        })
+                    );
+
+                    set({ projects: projectsWithTasks });
                 } catch (error) {
-                    console.error('Failed to fetch from JSONBin:', error);
+                    console.error('Failed to fetch from Supabase:', error);
                 }
             },
 
             addProject: async (name, description) => {
+                const { data, error } = await supabase
+                    .from('projects')
+                    .insert([{ name, description }])
+                    .select()
+                    .single();
+
+                if (error) {
+                    console.error('Failed to add project:', error);
+                    return;
+                }
+
                 const newProject: Project = {
-                    id: uuidv4(),
-                    name,
-                    description,
+                    id: data.id,
+                    name: data.name,
+                    description: data.description || '',
                     tasks: [],
-                    createdAt: Date.now(),
+                    createdAt: new Date(data.created_at).getTime(),
                 };
 
-                set((state) => {
-                    const newProjects = [...state.projects, newProject];
-                    saveState(newProjects, { theme: state.theme, accentColor: state.accentColor });
-                    return { projects: newProjects };
-                });
+                set((state) => ({ projects: [...state.projects, newProject] }));
             },
 
             updateProject: async (id, name, description) => {
-                set((state) => {
-                    const newProjects = state.projects.map((p) =>
+                const { error } = await supabase
+                    .from('projects')
+                    .update({ name, description })
+                    .eq('id', id);
+
+                if (error) {
+                    console.error('Failed to update project:', error);
+                    return;
+                }
+
+                set((state) => ({
+                    projects: state.projects.map((p) =>
                         p.id === id ? { ...p, name, description } : p
-                    );
-                    saveState(newProjects, { theme: state.theme, accentColor: state.accentColor });
-                    return { projects: newProjects };
-                });
+                    ),
+                }));
             },
 
             deleteProject: async (id) => {
-                set((state) => {
-                    const newProjects = state.projects.filter((p) => p.id !== id);
-                    saveState(newProjects, { theme: state.theme, accentColor: state.accentColor });
-                    return { projects: newProjects };
-                });
+                const { error } = await supabase
+                    .from('projects')
+                    .delete()
+                    .eq('id', id);
+
+                if (error) {
+                    console.error('Failed to delete project:', error);
+                    return;
+                }
+
+                set((state) => ({
+                    projects: state.projects.filter((p) => p.id !== id),
+                }));
             },
 
             addTask: async (projectId, title, description, status, priority = 3) => {
+                const { data, error } = await supabase
+                    .from('tasks')
+                    .insert([{ project_id: projectId, title, description, status, priority }])
+                    .select()
+                    .single();
+
+                if (error) {
+                    console.error('Failed to add task:', error);
+                    return;
+                }
+
                 const newTask: Task = {
-                    id: uuidv4(),
-                    title,
-                    description,
-                    status,
-                    priority,
-                    createdAt: Date.now(),
+                    id: data.id,
+                    title: data.title,
+                    description: data.description || '',
+                    status: data.status as TaskStatus,
+                    priority: data.priority || 3,
+                    createdAt: new Date(data.created_at).getTime(),
                 };
 
-                set((state) => {
-                    const newProjects = state.projects.map((p) =>
+                set((state) => ({
+                    projects: state.projects.map((p) =>
                         p.id === projectId
                             ? { ...p, tasks: [...p.tasks, newTask] }
                             : p
-                    );
-                    saveState(newProjects, { theme: state.theme, accentColor: state.accentColor });
-                    return { projects: newProjects };
-                });
+                    ),
+                }));
             },
 
             updateTask: async (projectId, taskId, updates) => {
-                set((state) => {
-                    const newProjects = state.projects.map((p) =>
+                const { error } = await supabase
+                    .from('tasks')
+                    .update(updates)
+                    .eq('id', taskId);
+
+                if (error) {
+                    console.error('Failed to update task:', error);
+                    return;
+                }
+
+                set((state) => ({
+                    projects: state.projects.map((p) =>
                         p.id === projectId
                             ? {
                                 ...p,
@@ -139,25 +187,31 @@ export const useStore = create<AppState>()(
                                 ),
                             }
                             : p
-                    );
-                    saveState(newProjects, { theme: state.theme, accentColor: state.accentColor });
-                    return { projects: newProjects };
-                });
+                    ),
+                }));
             },
 
             deleteTask: async (projectId, taskId) => {
-                set((state) => {
-                    const newProjects = state.projects.map((p) =>
+                const { error } = await supabase
+                    .from('tasks')
+                    .delete()
+                    .eq('id', taskId);
+
+                if (error) {
+                    console.error('Failed to delete task:', error);
+                    return;
+                }
+
+                set((state) => ({
+                    projects: state.projects.map((p) =>
                         p.id === projectId
                             ? {
                                 ...p,
                                 tasks: p.tasks.filter((t) => t.id !== taskId),
                             }
                             : p
-                    );
-                    saveState(newProjects, { theme: state.theme, accentColor: state.accentColor });
-                    return { projects: newProjects };
-                });
+                    ),
+                }));
             },
 
             moveTask: async (projectId, taskId, newStatus, newIndex) => {
@@ -192,7 +246,15 @@ export const useStore = create<AppState>()(
                             : p
                     );
 
-                    saveState(newProjects, { theme: state.theme, accentColor: state.accentColor });
+                    // Update in Supabase
+                    supabase
+                        .from('tasks')
+                        .update({ status: newStatus })
+                        .eq('id', taskId)
+                        .then(({ error }) => {
+                            if (error) console.error('Failed to update task status:', error);
+                        });
+
                     return { projects: newProjects };
                 });
             },
@@ -202,10 +264,7 @@ export const useStore = create<AppState>()(
             partialize: (state) => ({
                 theme: state.theme,
                 accentColor: state.accentColor,
-                // We don't persist projects to localStorage anymore to avoid conflicts
             }),
         }
     )
 );
-
-
