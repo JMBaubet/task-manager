@@ -3,16 +3,18 @@ import { persist } from 'zustand/middleware';
 import { Project, Task, TaskStatus } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import { ReactNode } from 'react';
+import { jsonbin } from '../services/jsonbin';
 
 interface AppState {
     projects: Project[];
-    addProject: (name: string, description: string) => void;
-    updateProject: (id: string, name: string, description: string) => void;
-    deleteProject: (id: string) => void;
-    addTask: (projectId: string, title: string, description: string, status: TaskStatus, priority?: number) => void;
-    updateTask: (projectId: string, taskId: string, updates: Partial<Task>) => void;
-    deleteTask: (projectId: string, taskId: string) => void;
-    moveTask: (projectId: string, taskId: string, newStatus: TaskStatus, newIndex: number) => void;
+    fetchProjects: () => Promise<void>;
+    addProject: (name: string, description: string) => Promise<void>;
+    updateProject: (id: string, name: string, description: string) => Promise<void>;
+    deleteProject: (id: string) => Promise<void>;
+    addTask: (projectId: string, title: string, description: string, status: TaskStatus, priority?: number) => Promise<void>;
+    updateTask: (projectId: string, taskId: string, updates: Partial<Task>) => Promise<void>;
+    deleteTask: (projectId: string, taskId: string) => Promise<void>;
+    moveTask: (projectId: string, taskId: string, newStatus: TaskStatus, newIndex: number) => Promise<void>;
     theme: 'light' | 'dark';
     toggleTheme: () => void;
     pageTitle: ReactNode | null;
@@ -21,63 +23,95 @@ interface AppState {
     setActionButton: (button: ReactNode | null) => void;
 }
 
+// Helper to save state to JSONBin
+const saveState = async (projects: Project[]) => {
+    try {
+        await jsonbin.update({ projects });
+    } catch (error) {
+        console.error('Failed to save to JSONBin:', error);
+    }
+};
+
 export const useStore = create<AppState>()(
     persist(
         (set) => ({
-            theme: 'dark', // Default to dark for the neon vibe
+            theme: 'dark',
             toggleTheme: () => set((state) => ({ theme: state.theme === 'light' ? 'dark' : 'light' })),
             pageTitle: null,
             setPageTitle: (title) => set({ pageTitle: title }),
             actionButton: null,
             setActionButton: (button) => set({ actionButton: button }),
             projects: [],
-            addProject: (name, description) =>
-                set((state) => ({
-                    projects: [
-                        ...state.projects,
-                        {
-                            id: uuidv4(),
-                            name,
-                            description,
-                            tasks: [],
-                            createdAt: Date.now(),
-                        },
-                    ],
-                })),
-            updateProject: (id, name, description) =>
-                set((state) => ({
-                    projects: state.projects.map((p) =>
+
+            fetchProjects: async () => {
+                try {
+                    const data = await jsonbin.get();
+                    if (data && data.projects) {
+                        set({ projects: data.projects });
+                    }
+                } catch (error) {
+                    console.error('Failed to fetch from JSONBin:', error);
+                }
+            },
+
+            addProject: async (name, description) => {
+                const newProject: Project = {
+                    id: uuidv4(),
+                    name,
+                    description,
+                    tasks: [],
+                    createdAt: Date.now(),
+                };
+
+                set((state) => {
+                    const newProjects = [...state.projects, newProject];
+                    saveState(newProjects);
+                    return { projects: newProjects };
+                });
+            },
+
+            updateProject: async (id, name, description) => {
+                set((state) => {
+                    const newProjects = state.projects.map((p) =>
                         p.id === id ? { ...p, name, description } : p
-                    ),
-                })),
-            deleteProject: (id) =>
-                set((state) => ({
-                    projects: state.projects.filter((p) => p.id !== id),
-                })),
-            addTask: (projectId, title, description, status, priority = 3) =>
-                set((state) => ({
-                    projects: state.projects.map((p) =>
+                    );
+                    saveState(newProjects);
+                    return { projects: newProjects };
+                });
+            },
+
+            deleteProject: async (id) => {
+                set((state) => {
+                    const newProjects = state.projects.filter((p) => p.id !== id);
+                    saveState(newProjects);
+                    return { projects: newProjects };
+                });
+            },
+
+            addTask: async (projectId, title, description, status, priority = 3) => {
+                const newTask: Task = {
+                    id: uuidv4(),
+                    title,
+                    description,
+                    status,
+                    priority,
+                    createdAt: Date.now(),
+                };
+
+                set((state) => {
+                    const newProjects = state.projects.map((p) =>
                         p.id === projectId
-                            ? {
-                                ...p,
-                                tasks: [
-                                    ...p.tasks,
-                                    {
-                                        id: uuidv4(),
-                                        title,
-                                        description,
-                                        status,
-                                        priority,
-                                        createdAt: Date.now(),
-                                    },
-                                ],
-                            }
+                            ? { ...p, tasks: [...p.tasks, newTask] }
                             : p
-                    ),
-                })),
-            updateTask: (projectId, taskId, updates) =>
-                set((state) => ({
-                    projects: state.projects.map((p) =>
+                    );
+                    saveState(newProjects);
+                    return { projects: newProjects };
+                });
+            },
+
+            updateTask: async (projectId, taskId, updates) => {
+                set((state) => {
+                    const newProjects = state.projects.map((p) =>
                         p.id === projectId
                             ? {
                                 ...p,
@@ -86,20 +120,28 @@ export const useStore = create<AppState>()(
                                 ),
                             }
                             : p
-                    ),
-                })),
-            deleteTask: (projectId, taskId) =>
-                set((state) => ({
-                    projects: state.projects.map((p) =>
+                    );
+                    saveState(newProjects);
+                    return { projects: newProjects };
+                });
+            },
+
+            deleteTask: async (projectId, taskId) => {
+                set((state) => {
+                    const newProjects = state.projects.map((p) =>
                         p.id === projectId
                             ? {
                                 ...p,
                                 tasks: p.tasks.filter((t) => t.id !== taskId),
                             }
                             : p
-                    ),
-                })),
-            moveTask: (projectId, taskId, newStatus, newIndex) =>
+                    );
+                    saveState(newProjects);
+                    return { projects: newProjects };
+                });
+            },
+
+            moveTask: async (projectId, taskId, newStatus, newIndex) => {
                 set((state) => {
                     const project = state.projects.find((p) => p.id === projectId);
                     if (!project) return state;
@@ -107,49 +149,43 @@ export const useStore = create<AppState>()(
                     const task = project.tasks.find((t) => t.id === taskId);
                     if (!task) return state;
 
-                    // Create a new array without the task being moved
                     const remainingTasks = project.tasks.filter((t) => t.id !== taskId);
-
-                    // Update the task's status
                     const updatedTask = { ...task, status: newStatus };
-
-                    // Get tasks in the destination column (from the remaining tasks)
                     const destinationTasks = remainingTasks.filter((t) => t.status === newStatus);
 
                     let newGlobalTasks = [...remainingTasks];
 
                     if (newIndex >= destinationTasks.length) {
-                        // Append to the end of the global list (or we could try to keep it grouped, but appending is simplest and works for Kanban)
-                        // To be more precise: if we want it to be the last of its status, putting it at the very end of the array works.
                         newGlobalTasks.push(updatedTask);
                     } else {
-                        // Insert before the task that is currently at newIndex in the destination column
                         const taskAtDestination = destinationTasks[newIndex];
                         const indexInGlobal = remainingTasks.findIndex((t) => t.id === taskAtDestination.id);
-
                         if (indexInGlobal !== -1) {
                             newGlobalTasks.splice(indexInGlobal, 0, updatedTask);
                         } else {
-                            // Fallback (should not happen)
                             newGlobalTasks.push(updatedTask);
                         }
                     }
 
-                    return {
-                        projects: state.projects.map((p) =>
-                            p.id === projectId
-                                ? { ...p, tasks: newGlobalTasks }
-                                : p
-                        ),
-                    };
-                }),
+                    const newProjects = state.projects.map((p) =>
+                        p.id === projectId
+                            ? { ...p, tasks: newGlobalTasks }
+                            : p
+                    );
+
+                    saveState(newProjects);
+                    return { projects: newProjects };
+                });
+            },
         }),
         {
             name: 'task-manager-storage-v2',
             partialize: (state) => ({
                 theme: state.theme,
-                projects: state.projects,
+                // We don't persist projects to localStorage anymore to avoid conflicts
             }),
         }
     )
 );
+
+

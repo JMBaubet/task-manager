@@ -24,7 +24,6 @@ export default function Layout() {
     const setActionButton = useStore((state) => state.setActionButton);
 
     useEffect(() => {
-        console.log('!!! VERSION_DEBUG_CHECK_12345: Frontend is running !!!');
         if (theme === 'dark') {
             document.documentElement.classList.add('dark');
         } else {
