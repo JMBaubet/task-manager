@@ -48,7 +48,7 @@ export default function ProjectDetail() {
         return (
             <div className="p-8 text-center">
                 <h2 className="text-xl font-bold text-gray-800 dark:text-white">Projet introuvable</h2>
-                <Link to="/" className="text-blue-600 dark:text-blue-400 hover:underline mt-4 block">Retour au Tableau de Bord</Link>
+                <Link to="/" className="text-accent-600 dark:text-accent-400 hover:underline mt-4 block">Retour au Tableau de Bord</Link>
             </div>
         );
     }
@@ -129,7 +129,7 @@ export default function ProjectDetail() {
 
     return (
         <div className="h-full flex flex-col">
-            <div className="flex-1 p-3 overflow-x-auto bg-gray-50 dark:bg-slate-900 transition-colors">
+            <div className="flex-1 p-3 overflow-x-auto bg-gray-50 dark:bg-neutral-900 transition-colors">
                 <DragDropContext onDragEnd={onDragEnd}>
                     <div className="flex gap-3 h-full min-w-fit">
                         <Column
@@ -163,8 +163,8 @@ export default function ProjectDetail() {
             {/* Task Modal */}
             {isModalOpen && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl dark:shadow-blue-900/20 w-full max-w-md overflow-hidden border dark:border-slate-700">
-                        <div className="px-6 py-4 border-b border-gray-100 dark:border-slate-700 flex justify-between items-center">
+                    <div className="bg-white dark:bg-neutral-800 rounded-xl shadow-2xl dark:shadow-accent-900/20 w-full max-w-md overflow-hidden border dark:border-neutral-700">
+                        <div className="px-6 py-4 border-b border-gray-100 dark:border-neutral-700 flex justify-between items-center">
                             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Nouvelle Tâche</h3>
                             <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
                                 <Plus className="w-6 h-6 rotate-45" />
@@ -178,7 +178,7 @@ export default function ProjectDetail() {
                                     required
                                     value={formData.title}
                                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                                    className="w-full px-3 py-2 border border-gray-300 dark:border-neutral-600 dark:bg-neutral-700 dark:text-white rounded-lg focus:ring-2 focus:ring-accent-500 focus:border-accent-500 outline-none transition-all"
                                     placeholder="Titre de la tâche"
                                     autoFocus
                                 />
@@ -189,7 +189,7 @@ export default function ProjectDetail() {
                                     rows={3}
                                     value={formData.description}
                                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                                    className="w-full px-3 py-2 border border-gray-300 dark:border-neutral-600 dark:bg-neutral-700 dark:text-white rounded-lg focus:ring-2 focus:ring-accent-500 focus:border-accent-500 outline-none transition-all"
                                     placeholder="Détails de la tâche..."
                                 />
                             </div>
@@ -217,13 +217,13 @@ export default function ProjectDetail() {
                                 <button
                                     type="button"
                                     onClick={() => setIsModalOpen(false)}
-                                    className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg font-medium transition-colors"
+                                    className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-neutral-700 rounded-lg font-medium transition-colors"
                                 >
                                     Annuler
                                 </button>
                                 <button
                                     type="submit"
-                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 hover:shadow-lg hover:shadow-blue-500/30 font-medium transition-colors"
+                                    className="px-4 py-2 bg-accent-600 text-white rounded-lg hover:bg-accent-700 hover:shadow-lg hover:shadow-accent-500/30 font-medium transition-colors"
                                 >
                                     Créer la Tâche
                                 </button>
@@ -236,8 +236,8 @@ export default function ProjectDetail() {
             {/* Delete Task Confirmation Modal */}
             {deleteConfirmTaskId && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl dark:shadow-blue-900/20 w-full max-w-md overflow-hidden border dark:border-slate-700">
-                        <div className="px-6 py-4 border-b border-gray-100 dark:border-slate-700">
+                    <div className="bg-white dark:bg-neutral-800 rounded-xl shadow-2xl dark:shadow-accent-900/20 w-full max-w-md overflow-hidden border dark:border-neutral-700">
+                        <div className="px-6 py-4 border-b border-gray-100 dark:border-neutral-700">
                             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Confirmer la suppression</h3>
                         </div>
                         <div className="p-6">
@@ -248,10 +248,10 @@ export default function ProjectDetail() {
                                 Cette action est irréversible.
                             </p>
                         </div>
-                        <div className="px-6 py-4 bg-gray-50 dark:bg-slate-900/50 flex justify-end gap-3">
+                        <div className="px-6 py-4 bg-gray-50 dark:bg-neutral-900/50 flex justify-end gap-3">
                             <button
                                 onClick={() => setDeleteConfirmTaskId(null)}
-                                className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg font-medium transition-colors"
+                                className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-neutral-700 rounded-lg font-medium transition-colors"
                             >
                                 Annuler
                             </button>
@@ -269,8 +269,8 @@ export default function ProjectDetail() {
             {/* Edit Task Modal */}
             {isEditModalOpen && editingTask && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl dark:shadow-blue-900/20 w-full max-w-md overflow-hidden border dark:border-slate-700">
-                        <div className="px-6 py-4 border-b border-gray-100 dark:border-slate-700 flex justify-between items-center">
+                    <div className="bg-white dark:bg-neutral-800 rounded-xl shadow-2xl dark:shadow-accent-900/20 w-full max-w-md overflow-hidden border dark:border-neutral-700">
+                        <div className="px-6 py-4 border-b border-gray-100 dark:border-neutral-700 flex justify-between items-center">
                             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Modifier la Tâche</h3>
                             <button onClick={() => setIsEditModalOpen(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
                                 <Plus className="w-6 h-6 rotate-45" />
@@ -284,7 +284,7 @@ export default function ProjectDetail() {
                                     required
                                     value={editFormData.title}
                                     onChange={(e) => setEditFormData({ ...editFormData, title: e.target.value })}
-                                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                                    className="w-full px-3 py-2 border border-gray-300 dark:border-neutral-600 dark:bg-neutral-700 dark:text-white rounded-lg focus:ring-2 focus:ring-accent-500 focus:border-accent-500 outline-none transition-all"
                                     placeholder="Titre de la tâche"
                                     autoFocus
                                 />
@@ -295,7 +295,7 @@ export default function ProjectDetail() {
                                     rows={3}
                                     value={editFormData.description}
                                     onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })}
-                                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                                    className="w-full px-3 py-2 border border-gray-300 dark:border-neutral-600 dark:bg-neutral-700 dark:text-white rounded-lg focus:ring-2 focus:ring-accent-500 focus:border-accent-500 outline-none transition-all"
                                     placeholder="Détails de la tâche..."
                                 />
                             </div>
@@ -323,7 +323,7 @@ export default function ProjectDetail() {
                                 <button
                                     type="button"
                                     onClick={() => setIsEditModalOpen(false)}
-                                    className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg font-medium transition-colors"
+                                    className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-neutral-700 rounded-lg font-medium transition-colors"
                                 >
                                     Annuler
                                 </button>

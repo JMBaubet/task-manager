@@ -23,7 +23,7 @@ export default function TaskCard({ task, index, onDelete, onEdit }: TaskCardProp
                     ref={provided.innerRef}
                     {...provided.draggableProps}
                     {...provided.dragHandleProps}
-                    className={`bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 mb-3 group hover:shadow-md dark:hover:shadow-blue-500/20 transition-all neon-card-hover ${snapshot.isDragging ? 'shadow-lg ring-2 ring-blue-500 rotate-2 z-50' : ''
+                    className={`bg-white dark:bg-neutral-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-neutral-700 mb-3 group hover:shadow-md hover:shadow-accent-500/10 dark:hover:shadow-accent-500/20 transition-all neon-card-hover ${snapshot.isDragging ? 'shadow-lg ring-2 ring-accent-500 rotate-2 z-50' : ''
                         }`}
                     style={provided.draggableProps.style}
                 >
@@ -44,7 +44,7 @@ export default function TaskCard({ task, index, onDelete, onEdit }: TaskCardProp
                         {isLongDescription && (
                             <button
                                 onClick={() => setIsExpanded(!isExpanded)}
-                                className="text-xs text-blue-600 dark:text-blue-400 hover:underline mt-1 font-medium"
+                                className="text-xs text-accent-600 dark:text-accent-400 hover:underline mt-1 font-medium"
                             >
                                 {isExpanded ? 'Voir moins' : 'Voir plus'}
                             </button>

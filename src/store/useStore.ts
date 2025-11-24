@@ -17,6 +17,8 @@ interface AppState {
     moveTask: (projectId: string, taskId: string, newStatus: TaskStatus, newIndex: number) => Promise<void>;
     theme: 'light' | 'dark';
     toggleTheme: () => void;
+    accentColor: 'gray' | 'blue' | 'orange' | 'red' | 'green' | 'purple' | 'pink' | 'yellow' | 'cyan';
+    setAccentColor: (color: 'gray' | 'blue' | 'orange' | 'red' | 'green' | 'purple' | 'pink' | 'yellow' | 'cyan') => void;
     pageTitle: ReactNode | null;
     setPageTitle: (title: ReactNode | null) => void;
     actionButton: ReactNode | null;
@@ -24,9 +26,9 @@ interface AppState {
 }
 
 // Helper to save state to JSONBin
-const saveState = async (projects: Project[]) => {
+const saveState = async (projects: Project[], settings: { theme: 'light' | 'dark'; accentColor: string }) => {
     try {
-        await jsonbin.update({ projects });
+        await jsonbin.update({ projects, settings });
     } catch (error) {
         console.error('Failed to save to JSONBin:', error);
     }
@@ -36,7 +38,20 @@ export const useStore = create<AppState>()(
     persist(
         (set) => ({
             theme: 'dark',
-            toggleTheme: () => set((state) => ({ theme: state.theme === 'light' ? 'dark' : 'light' })),
+            toggleTheme: () => {
+                set((state) => {
+                    const newTheme = state.theme === 'light' ? 'dark' : 'light';
+                    saveState(state.projects, { theme: newTheme, accentColor: state.accentColor });
+                    return { theme: newTheme };
+                });
+            },
+            accentColor: 'gray',
+            setAccentColor: (color) => {
+                set((state) => {
+                    saveState(state.projects, { theme: state.theme, accentColor: color });
+                    return { accentColor: color };
+                });
+            },
             pageTitle: null,
             setPageTitle: (title) => set({ pageTitle: title }),
             actionButton: null,
@@ -46,8 +61,12 @@ export const useStore = create<AppState>()(
             fetchProjects: async () => {
                 try {
                     const data = await jsonbin.get();
-                    if (data && data.projects) {
-                        set({ projects: data.projects });
+                    if (data) {
+                        set((state) => ({
+                            projects: data.projects || [],
+                            theme: data.settings?.theme || state.theme,
+                            accentColor: data.settings?.accentColor || state.accentColor,
+                        }));
                     }
                 } catch (error) {
                     console.error('Failed to fetch from JSONBin:', error);
@@ -65,7 +84,7 @@ export const useStore = create<AppState>()(
 
                 set((state) => {
                     const newProjects = [...state.projects, newProject];
-                    saveState(newProjects);
+                    saveState(newProjects, { theme: state.theme, accentColor: state.accentColor });
                     return { projects: newProjects };
                 });
             },
@@ -75,7 +94,7 @@ export const useStore = create<AppState>()(
                     const newProjects = state.projects.map((p) =>
                         p.id === id ? { ...p, name, description } : p
                     );
-                    saveState(newProjects);
+                    saveState(newProjects, { theme: state.theme, accentColor: state.accentColor });
                     return { projects: newProjects };
                 });
             },
@@ -83,7 +102,7 @@ export const useStore = create<AppState>()(
             deleteProject: async (id) => {
                 set((state) => {
                     const newProjects = state.projects.filter((p) => p.id !== id);
-                    saveState(newProjects);
+                    saveState(newProjects, { theme: state.theme, accentColor: state.accentColor });
                     return { projects: newProjects };
                 });
             },
@@ -104,7 +123,7 @@ export const useStore = create<AppState>()(
                             ? { ...p, tasks: [...p.tasks, newTask] }
                             : p
                     );
-                    saveState(newProjects);
+                    saveState(newProjects, { theme: state.theme, accentColor: state.accentColor });
                     return { projects: newProjects };
                 });
             },
@@ -121,7 +140,7 @@ export const useStore = create<AppState>()(
                             }
                             : p
                     );
-                    saveState(newProjects);
+                    saveState(newProjects, { theme: state.theme, accentColor: state.accentColor });
                     return { projects: newProjects };
                 });
             },
@@ -136,7 +155,7 @@ export const useStore = create<AppState>()(
                             }
                             : p
                     );
-                    saveState(newProjects);
+                    saveState(newProjects, { theme: state.theme, accentColor: state.accentColor });
                     return { projects: newProjects };
                 });
             },
@@ -173,7 +192,7 @@ export const useStore = create<AppState>()(
                             : p
                     );
 
-                    saveState(newProjects);
+                    saveState(newProjects, { theme: state.theme, accentColor: state.accentColor });
                     return { projects: newProjects };
                 });
             },
@@ -182,6 +201,7 @@ export const useStore = create<AppState>()(
             name: 'task-manager-storage-v2',
             partialize: (state) => ({
                 theme: state.theme,
+                accentColor: state.accentColor,
                 // We don't persist projects to localStorage anymore to avoid conflicts
             }),
         }
